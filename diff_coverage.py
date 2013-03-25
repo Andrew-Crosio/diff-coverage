@@ -27,11 +27,12 @@ import webbrowser
 COVERAGE_PATH = '.coverage'  # TODO settings file for this
 ADDED_LINE = '+'
 REMOVED_LINE = '-'
-IGNORED_NAME_PORTIONS = ['test', 'docs', '.gitignore']
+IGNORED_NAME_PORTIONS = ['test', 'docs', '.gitignore']  # TODO better ignored patterns
 ROOT_PATH = os.getcwd()
 COVERAGE_FILE_PATH = os.path.join(ROOT_PATH, COVERAGE_PATH)
 coverage_html_dir = os.path.join(os.getcwd(), 'diff_coverage_html')
 line_end = '(?:\n|\r\n?)'
+BORDER_STYLE = 'style="border: 1px solid"'
 
 patch_logger = logging.getLogger('patch')
 patch_logger.addHandler(logging.NullHandler())
@@ -80,8 +81,8 @@ def main():
         print "No patch file provided"
         sys.exit(1)
 
-    patchfile = args[0]
-    target_lines = parse_patch(patchfile)
+    patch_file = args[0]
+    target_lines = parse_patch(patch_file)
     missing_lines = {}
     targets = []
     # generate coverage reports
@@ -95,10 +96,26 @@ def main():
             targets.append(target_file)
             missing_lines[target_file] = list(missing_patched)
 
+    report = {}
     for file_name, missing in missing_lines.iteritems():
         missing_percent = float(len(missing)) / len(target_lines[file_name]) * 100
         coverage_percent = 100 - missing_percent
-        print '%s: %0.1f%% coverage' % (file_name, coverage_percent)
+        report[file_name] = coverage_percent
+        print '%s: %.1f%% coverage' % (file_name, coverage_percent)
+
+    with open('diffcoverage.html', 'w') as html_report:
+        html_report.write('<html><body><b>Diff Coverage Report</b><table '
+                          '%s>' % BORDER_STYLE)
+        for file_name, coverage_percent in report.iteritems():
+            html_report.write('<tr %(BORDER_STYLE)s><td %(BORDER_STYLE)s>%(file_name)s'
+                              '</td><td %(BORDER_STYLE)s>%(coverage_percent).1f%%</td>'
+                              '</tr>' % {
+                                  'BORDER_STYLE': BORDER_STYLE,
+                                  'file_name': file_name,
+                                  'coverage_percent': coverage_percent
+                              })
+
+        html_report.write('</table></body></html>')
 
 
 if __name__ == "__main__":
