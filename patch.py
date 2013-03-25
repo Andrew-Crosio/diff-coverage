@@ -40,7 +40,6 @@ import re
 # cStringIO doesn't support unicode in 2.5
 from StringIO import StringIO
 import urllib2
-
 from os.path import exists, isabs, isfile, abspath, normpath
 import os
 
@@ -96,16 +95,6 @@ class Hunk(object):
         self.linestgt = None
         self.invalid = False
         self.text = []
-
-#  def apply(self, estream):
-#    """ write hunk data into enumerable stream
-#        return strings one by one until hunk is
-#        over
-#
-#        enumerable stream are tuples (lineno, line)
-#        where lineno starts with 0
-#    """
-#    pass
 
 
 class Patch(object):
@@ -509,7 +498,6 @@ class PatchSet(object):
 
         return PLAIN
 
-
     def _normalize_filenames(self):
         """ sanitize filenames, normalizing paths
             TODO think about using forward slashes for crossplatform issues
@@ -564,7 +552,6 @@ class PatchSet(object):
 
         return (errors == 0)
 
-
     def diffstat(self):
         """ calculate diffstat and return as a string
             Notes:
@@ -617,7 +604,6 @@ class PatchSet(object):
         output += (" %d files changed, %d insertions(+), %d deletions(-)"
                    % (len(names), sum(insert), sum(delete)))
         return output
-
 
     def apply(self):
         """ apply parsed patch
@@ -740,7 +726,6 @@ class PatchSet(object):
         # todo: check for premature eof
         return (errors == 0)
 
-
     def can_patch(self, filename):
         """ Check if specified filename can be patched. Returns None if file can
         not be found among source filenames. False if patch can not be applied
@@ -764,7 +749,6 @@ class PatchSet(object):
 
         lineno = 1
         line = fp.readline()
-        hno = None
         try:
             for hno, h in enumerate(hunks):
                 # skip to first line of the hunk
@@ -793,7 +777,6 @@ class PatchSet(object):
 
         fp.close()
         return matched
-
 
     def patch_stream(self, instream, hunks):
         """ Generator that yields stream patched with hunks iterable
@@ -854,7 +837,6 @@ class PatchSet(object):
 
         for line in instream:
             yield line
-
 
     def write_hunks(self, srcname, tgtname, hunks):
         src = open(srcname, "rb")

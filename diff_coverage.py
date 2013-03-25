@@ -24,21 +24,17 @@ import re
 import sys
 import webbrowser
 
-
+COVERAGE_PATH = '.coverage'  # TODO settings file for this
 ADDED_LINE = '+'
 REMOVED_LINE = '-'
 IGNORED_NAME_PORTIONS = ['test', 'docs', '.gitignore']
 ROOT_PATH = os.getcwd()
+COVERAGE_FILE_PATH = os.path.join(ROOT_PATH, COVERAGE_PATH)
 coverage_html_dir = os.path.join(os.getcwd(), 'diff_coverage_html')
 line_end = '(?:\n|\r\n?)'
 
 patch_logger = logging.getLogger('patch')
 patch_logger.addHandler(logging.NullHandler())
-
-# pattern to use to insert new stylesheet
-# this is currently pretty brittle - but lighterweight than doing something with
-# lxml and/or pyquery
-current_style = "<link rel='stylesheet' href='style.css' type='text/css'>"
 
 
 def is_ignored_file(file_path):
@@ -71,36 +67,10 @@ def parse_patch(patch_file):
                         patched_lines.append(line_offset)
 
                     line_offset += 1
+
             target_lines[p.target].extend(patched_lines)
+
     return target_lines
-
-
-def generate_css(targets, target_lines):
-    coverage_files = os.listdir(coverage_html_dir)
-
-    for target in targets:
-        target_name = target.replace('/', '_')
-        fname = target_name.replace(".py", ".css")
-        html_name = target_name.replace(".py", ".html")
-        css = ','.join(["#n%s" %l for l in target_lines[target]])
-        css += " {background: red;}"
-        css_file = os.path.join(coverage_html_dir, fname)
-        with open(css_file, 'w') as f:
-            f.write(css)
-        html_pattern = re.compile(html_name)
-        html_file = [p for p in coverage_files if html_pattern.search(p)]
-        if len(html_file) != 1:
-            raise ValueError("Found wrong number of matching html files")
-        html_file = os.path.join(coverage_html_dir,html_file[0])
-
-        html_source  = open(html_file, 'r').read()
-        style_start = html_source.find(current_style)
-        new_html = html_source[:style_start]
-        new_html += "<link rel='stylesheet' href='%s' type='text/css'>\n" % fname
-        new_html += html_source[style_start:]
-        os.unlink(html_file)
-        with open(html_file, 'w') as f:
-            f.write(new_html)
 
 
 def main():
@@ -112,24 +82,21 @@ def main():
 
     patchfile = args[0]
     target_lines = parse_patch(patchfile)
+    missing_lines = {}
     targets = []
     # generate coverage reports
-    cov = coverage.coverage(data_file=os.path.join(ROOT_PATH, 'tests', '.coverage'))
+    cov = coverage.coverage(data_file=COVERAGE_FILE_PATH)
     cov.load()
-    for t in target_lines.keys():
-        path = os.path.join(ROOT_PATH, t)
-        f, exe, exl, mis, misr = cov.analysis2(path)
-        missing_patched = set(mis) & set(target_lines[t])
+    for target_file in target_lines.iterkeys():
+        path = os.path.join(ROOT_PATH, target_file)
+        filename, executed, excluded, missing, missing_regions = cov.analysis2(path)
+        missing_patched = set(missing) & set(target_lines[target_file])
         if missing_patched:
-            targets.append(t)
-            target_lines[t] = list(missing_patched)
-            missing_lines = ', '.join([str(x) for x in missing_patched])
-            print '{} missing: {}'.format(t, missing_lines)
+            targets.append(target_file)
+            missing_lines[target_file] = list(missing_patched)
 
-    target_files = [os.path.join(ROOT_PATH, x) for x in targets]
-    cov.html_report(morfs=target_files, directory=coverage_html_dir)
-    generate_css(targets, target_lines)
-    webbrowser.open(os.path.join(coverage_html_dir, 'index.html'))
+    for file_name, missing in missing_lines.iteritems():
+        print '%s, missing: %s' % (file_name, ', '.join(str(i) for i in missing))
 
 
 if __name__ == "__main__":
