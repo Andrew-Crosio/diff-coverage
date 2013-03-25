@@ -96,7 +96,9 @@ def main():
             missing_lines[target_file] = list(missing_patched)
 
     for file_name, missing in missing_lines.iteritems():
-        print '%s, missing: %s' % (file_name, ', '.join(str(i) for i in missing))
+        missing_percent = float(len(missing)) / len(target_lines[file_name]) * 100
+        coverage_percent = 100 - missing_percent
+        print '%s: %0.1f%% coverage' % (file_name, coverage_percent)
 
 
 if __name__ == "__main__":
