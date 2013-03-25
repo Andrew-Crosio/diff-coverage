@@ -17,7 +17,6 @@
 from collections import defaultdict
 from optparse import OptionParser
 import coverage
-import django
 import logging
 import os
 import patch
@@ -26,7 +25,10 @@ import sys
 import webbrowser
 
 
-django_path = os.path.abspath(os.path.dirname(os.path.dirname(django.__file__)))
+ADDED_LINE = '+'
+REMOVED_LINE = '-'
+IGNORED_NAME_PORTIONS = ['test', 'docs', '.gitignore']
+ROOT_PATH = os.getcwd()
 coverage_html_dir = os.path.join(os.getcwd(), 'diff_coverage_html')
 line_end = '(?:\n|\r\n?)'
 
@@ -38,37 +40,39 @@ patch_logger.addHandler(logging.NullHandler())
 # lxml and/or pyquery
 current_style = "<link rel='stylesheet' href='style.css' type='text/css'>"
 
+
+def is_ignored_file(file_path):
+    return any(ignored_portion in file_path for ignored_portion in IGNORED_NAME_PORTIONS)
+
+
 def parse_patch(patch_file):
-    """
-    returns a dictionary of {filepath:[lines patched]}
-    """
+    """returns a dictionary of {filepath:[lines patched]}"""
     patch_set = patch.fromfile(patch_file)
     target_files = set()
-    target_files.update([os.path.join(django_path, p.target.lstrip('/ab')) for p in patch_set.items])
-    target_files = [p for p in target_files if 'test' not in p]
-    target_files = [p for p in target_files if 'docs' not in p]
-    target_files = [p for p in target_files if os.path.exists(p)]
-    target_lines = defaultdict(list)
+    for changed_file in patch_set.items:
+        relative_path = changed_file.target
+        if not is_ignored_file(relative_path):
+            absolute_file_path = os.path.join(ROOT_PATH, relative_path)
+            if os.path.exists(absolute_file_path):
+                target_files.add(absolute_file_path)
 
+    target_lines = defaultdict(list)
     for p in patch_set.items:
-        source_file = os.path.join(django_path, p.target)
+        source_file = os.path.join(ROOT_PATH, p.target)
         if source_file not in target_files:
             continue
-        source_lines = []
-        last_hunk_offset = 1
+
         for hunk in p.hunks:
             patched_lines = []
             line_offset = hunk.starttgt
             for hline in hunk.text:
-                if hline.startswith('-'):
-                    continue
-                if hline.startswith('+'):
-                    patched_lines.append(line_offset)
-                line_offset += 1
+                if not hline.startswith(REMOVED_LINE):
+                    if hline.startswith(ADDED_LINE):
+                        patched_lines.append(line_offset)
+
+                    line_offset += 1
             target_lines[p.target].extend(patched_lines)
     return target_lines
-
-
 
 
 def generate_css(targets, target_lines):
@@ -99,25 +103,21 @@ def generate_css(targets, target_lines):
             f.write(new_html)
 
 
-
-
-if __name__ == "__main__":
+def main():
     opt = OptionParser()
     (options, args) = opt.parse_args()
     if not args:
         print "No patch file provided"
         sys.exit(1)
-    patchfile = args[0]
 
+    patchfile = args[0]
     target_lines = parse_patch(patchfile)
     targets = []
-
     # generate coverage reports
-    cov = coverage.coverage(data_file = os.path.join(django_path, 'tests', '.coverage'))
+    cov = coverage.coverage(data_file=os.path.join(ROOT_PATH, 'tests', '.coverage'))
     cov.load()
-
     for t in target_lines.keys():
-        path = os.path.join(django_path, t)
+        path = os.path.join(ROOT_PATH, t)
         f, exe, exl, mis, misr = cov.analysis2(path)
         missing_patched = set(mis) & set(target_lines[t])
         if missing_patched:
@@ -126,11 +126,11 @@ if __name__ == "__main__":
             missing_lines = ', '.join([str(x) for x in missing_patched])
             print '{} missing: {}'.format(t, missing_lines)
 
-
-    target_files = [os.path.join(django_path, x) for x in targets]
+    target_files = [os.path.join(ROOT_PATH, x) for x in targets]
     cov.html_report(morfs=target_files, directory=coverage_html_dir)
-
     generate_css(targets, target_lines)
-
     webbrowser.open(os.path.join(coverage_html_dir, 'index.html'))
 
+
+if __name__ == "__main__":
+    main()
