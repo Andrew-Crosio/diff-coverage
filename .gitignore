@@ -40,3 +40,5 @@ tags
 _build
 
 diff_coverage_html
+
+.idea
