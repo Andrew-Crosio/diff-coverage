@@ -90,7 +90,8 @@ def parse_patch(patch_file):
     return target_lines
 
 
-def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PATH):
+def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PATH,
+                  html_file_path=settings.HTML_DIFF_REPORT_PATH):
     assert os.path.exists(coverage_file)
 
     target_lines = parse_patch(patch_file)
@@ -120,7 +121,7 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
         }
         print '%s: %.1f%% coverage' % (file_name, coverage_percent)
 
-    with open('diffcoverage.html', 'w') as html_report:
+    with open(html_file_path, 'w') as html_report:
         if report:
             layout_template = FileTemplate(LAYOUT_TEMPLATE_FILE)
             row_template = FileTemplate(ROW_TEMPLATE_FILE)
@@ -150,6 +151,9 @@ def main():
                    action='store_true', help='Show even 100% coveraged files')
     opt.add_option('-c', '--coverage-file', dest='coverage_file',
                    default=settings.COVERAGE_PATH, help='Set the coverage file path')
+    opt.add_option('-o', '--output-file', dest='html_file_path',
+                   default=settings.HTML_DIFF_REPORT_PATH,
+                   help='Set the path to save the html diff coverage report.')
     (options, args) = opt.parse_args()
     if not args:
         print "No patch file provided"
@@ -159,8 +163,10 @@ def main():
 
     show_all = options.show_all
     coverage_file = options.coverage_file
+    html_file_path = options.html_file_path
     patch_file = args[0]
-    diff_coverage(patch_file, show_all=show_all, coverage_file=coverage_file)
+    diff_coverage(patch_file, show_all=show_all, coverage_file=coverage_file,
+                  html_file_path=html_file_path)
 
 
 if __name__ == "__main__":
