@@ -62,7 +62,7 @@ def get_jenkins_path(file_name):
     if len(file_name_parts) > 1:
         file_name_parts = ['_'.join(file_name_parts[:2])] + file_name_parts[2:]
 
-    file_name_parts[-1].replace('.py', '_py')
+    file_name_parts[-1] = file_name_parts[-1].replace('.py', '_py')
     return os.path.sep.join(file_name_parts)
 
 
