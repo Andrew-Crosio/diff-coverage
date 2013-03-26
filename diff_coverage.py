@@ -125,7 +125,7 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
             missing_percent = float(len(missing)) / coverage_executed * 100
         except ZeroDivisionError:
             missing_percent = 100.0
-            
+
         coverage_percent = 100 - missing_percent
         report[file_name] = {
             'coverage_percent': coverage_percent,
@@ -154,8 +154,7 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
             html_report_string = layout_template.substitute(coverage_rows=all_rows)
             html_report.write(html_report_string)
         else:
-            # TODO stuff
-            pass
+            html_report.write('<html><body><h1>Error! Nothing found!</body></html>')
 
 
 def main():
