@@ -19,13 +19,13 @@ import sys
 import coverage
 
 import patch
-import globalsettings
+import settings
 
 ADDED_LINE = '+'
 REMOVED_LINE = '-'
 ROOT_PATH = os.getcwd()
-COVERAGE_FILE_PATH = os.path.join(ROOT_PATH, globalsettings.COVERAGE_PATH)
-coverage_html_dir = os.path.join(os.getcwd(), globalsettings.OUTPUT_COVERAGE_DOC)
+COVERAGE_FILE_PATH = os.path.join(ROOT_PATH, settings.COVERAGE_PATH)
+coverage_html_dir = os.path.join(os.getcwd(), settings.OUTPUT_COVERAGE_DOC)
 line_end = '(?:\n|\r\n?)'
 BORDER_STYLE = 'style="border: 1px solid"'
 
@@ -34,7 +34,7 @@ patch_logger.addHandler(logging.NullHandler())
 
 
 def is_ignored_file(file_path):
-    for ignored_portion in globalsettings.IGNORED_NAME_PORTIONS:
+    for ignored_portion in settings.IGNORED_NAME_PORTIONS:
         try:
             result = bool(ignored_portion.match(file_path))
         except AttributeError:
@@ -78,22 +78,14 @@ def parse_patch(patch_file):
     return target_lines
 
 
-def main():
-    opt = OptionParser(usage='usage: %prog diffpatch [options...]')
-    opt.add_option('-a', '--show-all', dest='show_all', default=False,
-                   action='store_true', help='Show even 100% coveraged files')
-    (options, args) = opt.parse_args()
-    if not args:
-        print "No patch file provided"
-        sys.exit(1)
+def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PATH):
+    assert os.path.exists(coverage_file)
 
-    show_all = options.show_all
-    patch_file = args[0]
     target_lines = parse_patch(patch_file)
     missing_lines = {}
     targets = []
     # generate coverage reports
-    cov = coverage.coverage(data_file=COVERAGE_FILE_PATH)
+    cov = coverage.coverage(data_file=coverage_file)
     cov.load()
     for target_file in target_lines.iterkeys():
         path = os.path.join(ROOT_PATH, target_file)
@@ -123,6 +115,25 @@ def main():
                               })
 
         html_report.write('</table></body></html>')
+
+
+def main():
+    opt = OptionParser(usage='usage: %prog diffpatch [options...]')
+    opt.add_option('-a', '--show-all', dest='show_all', default=False,
+                   action='store_true', help='Show even 100% coveraged files')
+    opt.add_option('-c', '--coverage-file', dest='coverage_file',
+                   default=settings.COVERAGE_PATH, help='Set the coverage file path')
+    (options, args) = opt.parse_args()
+    if not args:
+        print "No patch file provided"
+        print
+        opt.print_help()
+        sys.exit(1)
+
+    show_all = options.show_all
+    coverage_file = options.coverage_file
+    patch_file = args[0]
+    diff_coverage(patch_file, show_all=show_all, coverage_file=coverage_file)
 
 
 if __name__ == "__main__":
