@@ -81,7 +81,7 @@ def parse_patch(patch_file):
 
     target_lines = defaultdict(list)
     for p in patch_set.items:
-        source_file = os.path.join(ROOT_PATH, p.target)
+        source_file = os.path.join(ROOT_PATH, p.target.lstrip(LEFTOVER_BAD_CHARS))
         if source_file not in target_files:
             continue
 
@@ -95,7 +95,7 @@ def parse_patch(patch_file):
 
                     line_offset += 1
 
-            target_lines[p.target].extend(patched_lines)
+            target_lines[p.target.lstrip(LEFTOVER_BAD_CHARS)].extend(patched_lines)
 
     return target_lines
 
