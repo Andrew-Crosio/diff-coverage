@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 """
-
     diff-coverage
 
     This module will, in a somewhat inflexible way, compare a diff coverage.py
@@ -11,26 +9,23 @@
 
     requires http://python-patch.googlecode.com/svn/trunk/patch.py
     which is included in this package with attribution
-
 """
-
 from collections import defaultdict
 from optparse import OptionParser
-import coverage
 import logging
 import os
-import patch
-import re
 import sys
-import webbrowser
 
-COVERAGE_PATH = '.coverage'  # TODO settings file for this
+import coverage
+
+import patch
+import globalsettings
+
 ADDED_LINE = '+'
 REMOVED_LINE = '-'
-IGNORED_NAME_PORTIONS = ['test', 'docs', '.gitignore']  # TODO better ignored patterns
 ROOT_PATH = os.getcwd()
-COVERAGE_FILE_PATH = os.path.join(ROOT_PATH, COVERAGE_PATH)
-coverage_html_dir = os.path.join(os.getcwd(), 'diff_coverage_html')
+COVERAGE_FILE_PATH = os.path.join(ROOT_PATH, globalsettings.COVERAGE_PATH)
+coverage_html_dir = os.path.join(os.getcwd(), globalsettings.OUTPUT_COVERAGE_DOC)
 line_end = '(?:\n|\r\n?)'
 BORDER_STYLE = 'style="border: 1px solid"'
 
@@ -39,7 +34,16 @@ patch_logger.addHandler(logging.NullHandler())
 
 
 def is_ignored_file(file_path):
-    return any(ignored_portion in file_path for ignored_portion in IGNORED_NAME_PORTIONS)
+    for ignored_portion in globalsettings.IGNORED_NAME_PORTIONS:
+        try:
+            result = bool(ignored_portion.match(file_path))
+        except AttributeError:
+            result = ignored_portion in file_path
+
+        if result:
+            return True
+
+    return False
 
 
 def parse_patch(patch_file):
@@ -75,12 +79,15 @@ def parse_patch(patch_file):
 
 
 def main():
-    opt = OptionParser()
+    opt = OptionParser(usage='usage: %prog diffpatch [options...]')
+    opt.add_option('-a', '--show-all', dest='show_all', default=False,
+                   action='store_true', help='Show even 100% coveraged files')
     (options, args) = opt.parse_args()
     if not args:
         print "No patch file provided"
         sys.exit(1)
 
+    show_all = options.show_all
     patch_file = args[0]
     target_lines = parse_patch(patch_file)
     missing_lines = {}
@@ -92,7 +99,7 @@ def main():
         path = os.path.join(ROOT_PATH, target_file)
         filename, executed, excluded, missing, missing_regions = cov.analysis2(path)
         missing_patched = set(missing) & set(target_lines[target_file])
-        if missing_patched:
+        if missing_patched or show_all:
             targets.append(target_file)
             missing_lines[target_file] = list(missing_patched)
 
