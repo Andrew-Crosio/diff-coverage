@@ -22,6 +22,7 @@ import coverage
 import patch
 import settings
 
+LEFTOVER_BAD_CHARS = 'ab/'
 
 TEMPLATE_FOLDER = os.path.abspath(os.path.join(__file__, '..'))
 LAYOUT_TEMPLATE_FILE = os.path.join(TEMPLATE_FOLDER, 'templates/layout.html')
@@ -71,7 +72,7 @@ def parse_patch(patch_file):
     patch_set = patch.fromfile(patch_file)
     target_files = set()
     for changed_file in patch_set.items:
-        relative_path = changed_file.target
+        relative_path = changed_file.target.lstrip(LEFTOVER_BAD_CHARS)
         if not is_ignored_file(relative_path):
             absolute_file_path = os.path.join(ROOT_PATH, relative_path)
             if (os.path.exists(absolute_file_path)
