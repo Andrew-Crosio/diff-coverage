@@ -14,6 +14,7 @@ from collections import defaultdict
 from optparse import OptionParser
 import logging
 import os
+import string
 import sys
 
 import coverage
@@ -21,6 +22,10 @@ import coverage
 import patch
 import settings
 
+
+TEMPLATE_FOLDER = os.path.abspath(os.path.join(__file__, '..'))
+LAYOUT_TEMPLATE_FILE = os.path.join(TEMPLATE_FOLDER, 'templates/layout.html')
+ROW_TEMPLATE_FILE = os.path.join(TEMPLATE_FOLDER, 'templates/row.html')
 ADDED_LINE = '+'
 REMOVED_LINE = '-'
 ROOT_PATH = os.getcwd()
@@ -31,6 +36,12 @@ BORDER_STYLE = 'style="border: 1px solid"'
 
 patch_logger = logging.getLogger('patch')
 patch_logger.addHandler(logging.NullHandler())
+
+
+class FileTemplate(string.Template):
+    def __init__(self, file_name):
+        with open(file_name, 'r') as template_file:
+            super(FileTemplate, self).__init__(template_file.read())
 
 
 def is_ignored_file(file_path):
@@ -54,7 +65,8 @@ def parse_patch(patch_file):
         relative_path = changed_file.target
         if not is_ignored_file(relative_path):
             absolute_file_path = os.path.join(ROOT_PATH, relative_path)
-            if os.path.exists(absolute_file_path):
+            if (os.path.exists(absolute_file_path)
+                    and not os.path.isdir(absolute_file_path)):
                 target_files.add(absolute_file_path)
 
     target_lines = defaultdict(list)
@@ -97,22 +109,37 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
 
     report = {}
     for file_name, missing in missing_lines.iteritems():
-        missing_percent = float(len(missing)) / len(target_lines[file_name]) * 100
+        coverage_executed = len(target_lines[file_name])
+        coverage_covered = coverage_executed - len(missing)
+        missing_percent = float(len(missing)) / coverage_executed * 100
         coverage_percent = 100 - missing_percent
-        report[file_name] = coverage_percent
+        report[file_name] = {
+            'coverage_percent': coverage_percent,
+            'coverage_executed': coverage_executed,
+            'coverage_covered': coverage_covered
+        }
         print '%s: %.1f%% coverage' % (file_name, coverage_percent)
 
     with open('diffcoverage.html', 'w') as html_report:
-        html_report.write('<html><body><b>Diff Coverage Report</b><table '
-                          '%s>' % BORDER_STYLE)
-        for file_name, coverage_percent in report.iteritems():
-            html_report.write('<tr %(BORDER_STYLE)s><td %(BORDER_STYLE)s>%(file_name)s'
-                              '</td><td %(BORDER_STYLE)s>%(coverage_percent).1f%%</td>'
-                              '</tr>' % {
-                                  'BORDER_STYLE': BORDER_STYLE,
-                                  'file_name': file_name,
-                                  'coverage_percent': coverage_percent
-                              })
+        if report:
+            layout_template = FileTemplate(LAYOUT_TEMPLATE_FILE)
+            row_template = FileTemplate(ROW_TEMPLATE_FILE)
+            rows = []
+            for file_name, coverage_info in report.iteritems():
+                coverage_percent = '%.1f%%' % coverage_info['coverage_percent']
+                coverage_executed = coverage_info['coverage_executed']
+                coverage_covered = coverage_info['coverage_covered']
+                rows.append(row_template.substitute(file_name=file_name,
+                                                    coverage_percent=coverage_percent,
+                                                    coverage_executed=coverage_executed,
+                                                    coverage_covered=coverage_covered))
+
+            all_rows = ''.join(rows)
+            html_report_string = layout_template.substitute(coverage_rows=all_rows)
+            html_report.write(html_report_string)
+        else:
+            # TODO stuff
+            pass
 
         html_report.write('</table></body></html>')
 
@@ -138,3 +165,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
