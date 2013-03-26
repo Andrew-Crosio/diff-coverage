@@ -57,6 +57,15 @@ def is_ignored_file(file_path):
     return False
 
 
+def get_jenkins_path(file_name):
+    file_name_parts = file_name.split('/')
+    if len(file_name_parts) > 1:
+        file_name_parts = ['_'.join(file_name_parts[:2])] + file_name_parts[2:]
+
+    file_name_parts[-1].replace('.py', '_py')
+    return os.path.sep.join(file_name_parts)
+
+
 def parse_patch(patch_file):
     """returns a dictionary of {filepath:[lines patched]}"""
     patch_set = patch.fromfile(patch_file)
@@ -130,10 +139,12 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
                 coverage_percent = '%.1f%%' % coverage_info['coverage_percent']
                 coverage_executed = coverage_info['coverage_executed']
                 coverage_covered = coverage_info['coverage_covered']
-                rows.append(row_template.substitute(file_name=file_name,
-                                                    coverage_percent=coverage_percent,
-                                                    coverage_executed=coverage_executed,
-                                                    coverage_covered=coverage_covered))
+                jenkins_coverage_path = get_jenkins_path(file_name)
+                rows.append(row_template.substitute(
+                    file_name=file_name, coverage_percent=coverage_percent,
+                    coverage_executed=coverage_executed,
+                    coverage_covered=coverage_covered,
+                    jenkins_coverage_path=jenkins_coverage_path))
 
             all_rows = ''.join(rows)
             html_report_string = layout_template.substitute(coverage_rows=all_rows)
@@ -141,8 +152,6 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
         else:
             # TODO stuff
             pass
-
-        html_report.write('</table></body></html>')
 
 
 def main():
