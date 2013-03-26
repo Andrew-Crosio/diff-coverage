@@ -121,7 +121,11 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
     for file_name, missing in missing_lines.iteritems():
         coverage_executed = len(target_lines[file_name])
         coverage_covered = coverage_executed - len(missing)
-        missing_percent = float(len(missing)) / coverage_executed * 100
+        try:
+            missing_percent = float(len(missing)) / coverage_executed * 100
+        except ZeroDivisionError:
+            missing_percent = 100.0
+            
         coverage_percent = 100 - missing_percent
         report[file_name] = {
             'coverage_percent': coverage_percent,
