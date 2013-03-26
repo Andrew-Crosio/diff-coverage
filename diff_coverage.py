@@ -14,6 +14,7 @@ from collections import defaultdict
 from optparse import OptionParser
 import logging
 import os
+import re
 import string
 import sys
 
@@ -22,8 +23,8 @@ import coverage
 import patch
 import settings
 
-LEFTOVER_BAD_CHARS = 'ab/'
 
+LEFTOVER_BAD_CHARS = re.compile('^(?:a|b|ab)/')
 TEMPLATE_FOLDER = os.path.abspath(os.path.join(__file__, '..'))
 LAYOUT_TEMPLATE_FILE = os.path.join(TEMPLATE_FOLDER, 'templates/layout.html')
 ROW_TEMPLATE_FILE = os.path.join(TEMPLATE_FOLDER, 'templates/row.html')
@@ -72,7 +73,7 @@ def parse_patch(patch_file):
     patch_set = patch.fromfile(patch_file)
     target_files = set()
     for changed_file in patch_set.items:
-        relative_path = changed_file.target.lstrip(LEFTOVER_BAD_CHARS)
+        relative_path = LEFTOVER_BAD_CHARS.sub('', changed_file.target)
         if not is_ignored_file(relative_path):
             absolute_file_path = os.path.join(ROOT_PATH, relative_path)
             if (os.path.exists(absolute_file_path)
@@ -81,7 +82,7 @@ def parse_patch(patch_file):
 
     target_lines = defaultdict(list)
     for p in patch_set.items:
-        source_file = os.path.join(ROOT_PATH, p.target.lstrip(LEFTOVER_BAD_CHARS))
+        source_file = os.path.join(ROOT_PATH, LEFTOVER_BAD_CHARS.sub('', p.target))
         if source_file not in target_files:
             continue
 
@@ -95,7 +96,7 @@ def parse_patch(patch_file):
 
                     line_offset += 1
 
-            target_lines[p.target.lstrip(LEFTOVER_BAD_CHARS)].extend(patched_lines)
+            target_lines[LEFTOVER_BAD_CHARS.sub('', p.target)].extend(patched_lines)
 
     return target_lines
 
