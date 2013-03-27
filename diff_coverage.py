@@ -16,6 +16,7 @@ import logging
 import os
 import re
 import string
+import subprocess
 import sys
 
 import coverage
@@ -24,6 +25,14 @@ import patch
 import settings
 
 
+LINE_SEPARATOR_NO_JOIN = '-'
+PERCENT_COVERED_HEADER = '% Covered'
+TOTAL_LINE_COV_HEADER = 'Total'
+COVERAGE_LINE_HEADER = 'Covered'
+FILE_NAME_HEADER = 'File name'
+GIT_BRANCH_SELECTION_MARKER = '*'
+STRIP_GIT_BRANCH_CHARS = GIT_BRANCH_SELECTION_MARKER + string.whitespace
+LINE_COVER_SEP = ' / '
 LEFTOVER_BAD_CHARS = re.compile('^(?:a|b|ab)/')
 TEMPLATE_FOLDER = os.path.abspath(os.path.join(__file__, '..'))
 LAYOUT_TEMPLATE_FILE = os.path.join(TEMPLATE_FOLDER, 'templates/layout.html')
@@ -101,6 +110,20 @@ def parse_patch(patch_file):
     return target_lines
 
 
+def get_current_git_branch():
+    process = subprocess.Popen(['git', 'branch'], stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    if process.wait():
+        raise RuntimeError('Error retrieving current branch: %s'
+                           % process.stderr.read() or 'No error available')
+
+    for branch_line in process.stdout.readlines():
+        if branch_line.startswith(GIT_BRANCH_SELECTION_MARKER):
+            return branch_line.strip(STRIP_GIT_BRANCH_CHARS)
+
+    raise RuntimeError('Impossibru! No git branch selected?')
+
+
 def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PATH,
                   html_file_path=settings.HTML_DIFF_REPORT_PATH):
     assert os.path.exists(coverage_file)
@@ -108,7 +131,6 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
     target_lines = parse_patch(patch_file)
     missing_lines = {}
     targets = []
-    # generate coverage reports
     cov = coverage.coverage(data_file=coverage_file)
     cov.load()
     for target_file in target_lines.iterkeys():
@@ -134,10 +156,35 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
             'coverage_executed': coverage_executed,
             'coverage_covered': coverage_covered
         }
-        print '%s: %.1f%% coverage' % (file_name, coverage_percent)
 
     with open(html_file_path, 'w') as html_report:
         if report:
+            current_branch = get_current_git_branch()
+            print 'Coverage report for branch "%s" against "%s"' % (
+                current_branch, settings.COMPARE_WITH_BRANCH)
+            max_filename_size = max(len(key) for key in report.keys())
+            max_filename_size = max(max_filename_size, len(FILE_NAME_HEADER))
+            max_covered_size = len(str(max(info['coverage_covered']
+                                           for info in report.values())))
+            max_covered_size = max(max_covered_size, len(COVERAGE_LINE_HEADER))
+            max_executed_size = len(str(max(info['coverage_executed']
+                                            for info in report.values())))
+            max_executed_size = max(max_executed_size, len(TOTAL_LINE_COV_HEADER))
+            header_format_string = ('| {0:^%ds} | {1:^9s} | {2:^%ds} / {3:^%ds} |'
+                                    % (max_filename_size, max_covered_size,
+                                       max_executed_size))
+            line_separator = '+-%s-+-%s-+-%s-+' % (
+                LINE_SEPARATOR_NO_JOIN * max_filename_size,
+                LINE_SEPARATOR_NO_JOIN * 9,
+                LINE_SEPARATOR_NO_JOIN * (max_covered_size + max_executed_size + 3),
+            )
+            print line_separator
+            print header_format_string.format(FILE_NAME_HEADER, PERCENT_COVERED_HEADER,
+                                              COVERAGE_LINE_HEADER, TOTAL_LINE_COV_HEADER)
+            print line_separator
+            print_format_string = ('| {0:<%ds} | {1:>9s} | {2:>%dd} / {3:<%dd} |'
+                                   % (max_filename_size, max_covered_size,
+                                      max_executed_size))
             layout_template = FileTemplate(LAYOUT_TEMPLATE_FILE)
             row_template = FileTemplate(ROW_TEMPLATE_FILE)
             rows = []
@@ -151,12 +198,16 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
                     coverage_executed=coverage_executed,
                     coverage_covered=coverage_covered,
                     jenkins_coverage_path=jenkins_coverage_path))
+                print print_format_string.format(file_name, coverage_percent,
+                                                 coverage_covered, coverage_executed)
 
+            print line_separator
             all_rows = ''.join(rows)
             html_report_string = layout_template.substitute(coverage_rows=all_rows)
             html_report.write(html_report_string)
         else:
             html_report.write('<html><body><h1>Error! Nothing found!</body></html>')
+            print >> sys.stderr, 'Error! Nothing found!'
 
 
 def main():
