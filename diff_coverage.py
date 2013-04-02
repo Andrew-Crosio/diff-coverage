@@ -65,6 +65,15 @@ def is_ignored_file(file_path):
         if result:
             return True
 
+    for required_portion in settings.REQUIRED_NAME_PORTIONS:
+        try:
+            result = bool(required_portion.match(file_path))
+        except AttributeError:
+            result = required_portion in file_path
+
+        if not result:
+            return True
+
     return False
 
 
