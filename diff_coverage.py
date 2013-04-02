@@ -58,7 +58,7 @@ class FileTemplate(string.Template):
 def is_ignored_file(file_path):
     for ignored_portion in settings.IGNORED_NAME_PORTIONS:
         try:
-            result = bool(ignored_portion.match(file_path))
+            result = bool(ignored_portion.search(file_path))
         except AttributeError:
             result = ignored_portion in file_path
 
@@ -67,7 +67,7 @@ def is_ignored_file(file_path):
 
     for required_portion in settings.REQUIRED_NAME_PORTIONS:
         try:
-            result = bool(required_portion.match(file_path))
+            result = bool(required_portion.search(file_path))
         except AttributeError:
             result = required_portion in file_path
 
