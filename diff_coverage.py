@@ -79,14 +79,14 @@ def is_ignored_file(file_path):
 
 def get_jenkins_path(file_name, root_package=None):
     file_name_parts = file_name.split('/')
-    if root_package:
-        file_name_parts.insert(0, root_package)
-
-    if len(file_name_parts) > 1:
-        file_name_parts = ['_'.join(file_name_parts[:2])] + file_name_parts[2:]
-
     file_name_parts[-1] = file_name_parts[-1].replace('.py', '_py')
-    return os.path.sep.join(file_name_parts)
+    if root_package:
+        return '%s/%s' % (root_package, '_'.join(file_name_parts))
+    else:
+        if len(file_name_parts) > 1:
+            file_name_parts = ['_'.join(file_name_parts[:2])] + file_name_parts[2:]
+
+        return os.path.sep.join(file_name_parts)
 
 
 def parse_patch(patch_file):
