@@ -77,8 +77,11 @@ def is_ignored_file(file_path):
     return False
 
 
-def get_jenkins_path(file_name):
+def get_jenkins_path(file_name, root_package=None):
     file_name_parts = file_name.split('/')
+    if root_package:
+        file_name_parts.insert(0, root_package)
+
     if len(file_name_parts) > 1:
         file_name_parts = ['_'.join(file_name_parts[:2])] + file_name_parts[2:]
 
@@ -134,7 +137,7 @@ def get_current_git_branch():
 
 
 def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PATH,
-                  html_file_path=settings.HTML_DIFF_REPORT_PATH):
+                  html_file_path=settings.HTML_DIFF_REPORT_PATH, root_package=None):
     assert os.path.exists(coverage_file)
 
     target_lines = parse_patch(patch_file)
@@ -201,7 +204,7 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
                 coverage_percent = '%.1f%%' % coverage_info['coverage_percent']
                 coverage_executed = coverage_info['coverage_executed']
                 coverage_covered = coverage_info['coverage_covered']
-                jenkins_coverage_path = get_jenkins_path(file_name)
+                jenkins_coverage_path = get_jenkins_path(file_name, root_package)
                 rows.append(row_template.substitute(
                     file_name=file_name, coverage_percent=coverage_percent,
                     coverage_executed=coverage_executed,
@@ -228,6 +231,8 @@ def main():
     opt.add_option('-o', '--output-file', dest='html_file_path',
                    default=settings.HTML_DIFF_REPORT_PATH,
                    help='Set the path to save the html diff coverage report.')
+    opt.add_option('-r', '--root-package', dest='root_package',
+                   default=None, help='Set the root package name for the XML report')
     (options, args) = opt.parse_args()
     if not args:
         print "No patch file provided"
@@ -238,9 +243,10 @@ def main():
     show_all = options.show_all
     coverage_file = options.coverage_file
     html_file_path = options.html_file_path
+    root_package = options.root_package
     patch_file = args[0]
     diff_coverage(patch_file, show_all=show_all, coverage_file=coverage_file,
-                  html_file_path=html_file_path)
+                  html_file_path=html_file_path, root_package=root_package)
 
 
 if __name__ == "__main__":
