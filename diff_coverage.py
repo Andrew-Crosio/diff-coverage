@@ -218,10 +218,16 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
                 raise ValueError('Unknown sort_by option')
 
             sorted_report = sorted(report.items(), cmp=comparer)
+            total_coverage_percent = 0.0
+            total_coverage_executed = 0
+            total_coverage_covered = 0
             for file_name, coverage_info in sorted_report:
                 coverage_percent = '%.1f%%' % coverage_info['coverage_percent']
                 coverage_executed = coverage_info['coverage_executed']
                 coverage_covered = coverage_info['coverage_covered']
+                total_coverage_percent += coverage_info['coverage_percent']
+                total_coverage_executed += coverage_executed
+                total_coverage_covered += coverage_covered
                 jenkins_coverage_path = get_jenkins_path(file_name, root_package)
                 rows.append(row_template.substitute(
                     file_name=file_name, coverage_percent=coverage_percent,
@@ -231,6 +237,22 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
                 print print_format_string.format(file_name, coverage_percent,
                                                  coverage_covered, coverage_executed)
 
+            print line_separator
+            num_items = len(report)
+            total_avg_coverage_percent = '%.1f%%' % (
+                float(total_coverage_covered) / total_coverage_executed * 100)
+            print print_format_string.format('TOTAL', total_avg_coverage_percent,
+                                             total_coverage_covered,
+                                             total_coverage_executed)
+            average_coverage_percent = '%.1f%%' % (total_coverage_percent / num_items)
+            average_coverage_executed = total_coverage_executed / num_items
+            average_coverage_covered = total_coverage_covered / num_items
+            avg_print_format_string = ('| {0:<%ds} | {1:>9s} | {2:>%d.1f} / {3:<%d.1f} |'
+                                       % (max_filename_size, max_covered_size,
+                                          max_executed_size))
+            print avg_print_format_string.format('AVERAGE', average_coverage_percent,
+                                                 average_coverage_covered,
+                                                 average_coverage_executed)
             print line_separator
             all_rows = ''.join(rows)
             html_report_string = layout_template.substitute(coverage_rows=all_rows)
