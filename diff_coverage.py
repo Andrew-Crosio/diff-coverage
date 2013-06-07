@@ -35,7 +35,6 @@ COMPARERS = {
     'numcovered': NUMCOVERED_COMPARISON
 }
 SORT_BY_CHOICES = COMPARERS.keys()
-
 LINE_SEPARATOR_NO_JOIN = '-'
 PERCENT_COVERED_HEADER = '% Covered'
 TOTAL_LINE_COV_HEADER = 'Total'
@@ -55,6 +54,7 @@ COVERAGE_FILE_PATH = os.path.join(ROOT_PATH, settings.COVERAGE_PATH)
 coverage_html_dir = os.path.join(os.getcwd(), settings.OUTPUT_COVERAGE_DOC)
 line_end = r'(?:\n|\r\n?)'
 BORDER_STYLE = 'style="border: 1px solid"'
+
 
 patch_logger = logging.getLogger('patch')
 patch_logger.addHandler(logging.NullHandler())
@@ -296,5 +296,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
