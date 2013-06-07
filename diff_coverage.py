@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 """
-    diff-coverage
+diff-coverage
 
-    This module will, in a somewhat inflexible way, compare a diff coverage.py
-    data to determine whether lines added or modified in the diff, were executed
-    during a coverage session.
+This module will, in a somewhat inflexible way, compare a diff coverage.py
+data to determine whether lines added or modified in the diff, were executed
+during a coverage session.
 
-    requires http://python-patch.googlecode.com/svn/trunk/patch.py
-    which is included in this package with attribution
+requires http://python-patch.googlecode.com/svn/trunk/patch.py
+which is included in this package with attribution
 """
 from collections import defaultdict
 from optparse import OptionParser
@@ -24,6 +24,17 @@ import coverage
 import patch
 import settings
 
+
+PERCENT_COMPARISON = lambda x, y: cmp(y[1]['coverage_percent'], x[1]['coverage_percent'])
+NUMCOVERED_COMPARISON = lambda x, y: cmp(y[1]['coverage_executed'],
+                                         x[1]['coverage_executed'])
+FILENAME_COMPARISON = lambda x, y: cmp(x[0], y[0])
+COMPARERS = {
+    'filename': FILENAME_COMPARISON,
+    'percent': PERCENT_COMPARISON,
+    'numcovered': NUMCOVERED_COMPARISON
+}
+SORT_BY_CHOICES = COMPARERS.keys()
 
 LINE_SEPARATOR_NO_JOIN = '-'
 PERCENT_COVERED_HEADER = '% Covered'
@@ -42,7 +53,7 @@ REMOVED_LINE = '-'
 ROOT_PATH = os.getcwd()
 COVERAGE_FILE_PATH = os.path.join(ROOT_PATH, settings.COVERAGE_PATH)
 coverage_html_dir = os.path.join(os.getcwd(), settings.OUTPUT_COVERAGE_DOC)
-line_end = '(?:\n|\r\n?)'
+line_end = r'(?:\n|\r\n?)'
 BORDER_STYLE = 'style="border: 1px solid"'
 
 patch_logger = logging.getLogger('patch')
@@ -137,7 +148,8 @@ def get_current_git_branch():
 
 
 def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PATH,
-                  html_file_path=settings.HTML_DIFF_REPORT_PATH, root_package=None):
+                  html_file_path=settings.HTML_DIFF_REPORT_PATH, root_package=None,
+                  sort_by='filename'):
     assert os.path.exists(coverage_file)
 
     target_lines = parse_patch(patch_file)
@@ -200,7 +212,13 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
             layout_template = FileTemplate(LAYOUT_TEMPLATE_FILE)
             row_template = FileTemplate(ROW_TEMPLATE_FILE)
             rows = []
-            for file_name, coverage_info in report.iteritems():
+            try:
+                comparer = COMPARERS[sort_by]
+            except KeyError:
+                raise ValueError('Unknown sort_by option')
+
+            sorted_report = sorted(report.items(), cmp=comparer)
+            for file_name, coverage_info in sorted_report:
                 coverage_percent = '%.1f%%' % coverage_info['coverage_percent']
                 coverage_executed = coverage_info['coverage_executed']
                 coverage_covered = coverage_info['coverage_covered']
@@ -233,6 +251,9 @@ def main():
                    help='Set the path to save the html diff coverage report.')
     opt.add_option('-r', '--root-package', dest='root_package',
                    default=None, help='Set the root package name for the XML report')
+    opt.add_option('-s', '--sort-by', dest='sort_by', default='filename',
+                   help='Sort by type: [filename, percentage, numcovered]',
+                   choices=SORT_BY_CHOICES)
     (options, args) = opt.parse_args()
     if not args:
         print "No patch file provided"
@@ -244,9 +265,11 @@ def main():
     coverage_file = options.coverage_file
     html_file_path = options.html_file_path
     root_package = options.root_package
+    sort_by = options.sort_by
     patch_file = args[0]
     diff_coverage(patch_file, show_all=show_all, coverage_file=coverage_file,
-                  html_file_path=html_file_path, root_package=root_package)
+                  html_file_path=html_file_path, root_package=root_package,
+                  sort_by=sort_by)
 
 
 if __name__ == "__main__":
