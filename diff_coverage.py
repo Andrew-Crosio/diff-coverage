@@ -88,7 +88,7 @@ def is_ignored_file(file_path):
     return False
 
 
-def get_jenkins_path(file_name, root_package=None, src_file_link_prefix=''):
+def get_jenkins_path(file_name, root_package=None, src_file_link_prefix=None):
     file_name_parts = file_name.split('/')
     file_name_parts[-1] = file_name_parts[-1].replace('.py', '_py')
     if src_file_link_prefix:
