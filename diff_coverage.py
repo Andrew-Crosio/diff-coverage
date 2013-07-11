@@ -88,11 +88,13 @@ def is_ignored_file(file_path):
     return False
 
 
-def get_jenkins_path(file_name, root_package=None, src_file_link_prefix=None, build_no=None):
+def get_jenkins_path(file_name, root_package=None, src_file_link_prefix=''):
     file_name_parts = file_name.split('/')
     file_name_parts[-1] = file_name_parts[-1].replace('.py', '_py')
-    if root_package or src_file_link_prefix or build_no:
-        return '%s/%s%s' % (root_package, src_file_link_prefix, '_'.join(file_name_parts))
+    if src_file_link_prefix:
+        file_name_parts.insert(0, src_file_link_prefix)
+    if root_package or src_file_link_prefix:
+        return '%s/%s' % (root_package, '_'.join(file_name_parts))
     else:
         if len(file_name_parts) > 1:
             file_name_parts = ['_'.join(file_name_parts[:2])] + file_name_parts[2:]
@@ -229,15 +231,18 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
                 total_coverage_percent += coverage_info['coverage_percent']
                 total_coverage_executed += coverage_executed
                 total_coverage_covered += coverage_covered
-                jenkins_coverage_path = get_jenkins_path(file_name, root_package, link_prefix, retain_build_no)
-                relative_path = '../..'
+                jenkins_coverage_path = get_jenkins_path(file_name, root_package, link_prefix)
+                
                 if retain_build_no:
                     relative_path = '..'
+                else:
+                    relative_path = '../..'
                 rows.append(row_template.substitute(
                     file_name=file_name, coverage_percent=coverage_percent,
                     coverage_executed=coverage_executed,
                     coverage_covered=coverage_covered,
-                    jenkins_coverage_path=jenkins_coverage_path, relative_path=relative_path))
+                    jenkins_coverage_path=jenkins_coverage_path, 
+                    relative_path=relative_path))
                 print print_format_string.format(file_name, coverage_percent,
                                                  coverage_covered, coverage_executed)
 
