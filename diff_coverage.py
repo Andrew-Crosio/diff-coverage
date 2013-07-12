@@ -285,7 +285,7 @@ def main():
     opt.add_option('-s', '--sort-by', dest='sort_by', default='filename',
                    help='Sort by type: [filename, percentage, numcovered]',
                    choices=SORT_BY_CHOICES)
-    opt.add_option('-b', '--reatin-build-no', dest='retain_build_no', default=False,
+    opt.add_option('-b', '--retain-build-no', dest='retain_build_no', default=False,
                    action='store_true', help='Set the build number to be used while creating links for source files')
     opt.add_option('-p', '--link-prefix', dest='link_prefix',
                    default='', help='Set link prefix to be used while creating links for source file')
