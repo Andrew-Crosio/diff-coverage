@@ -88,9 +88,11 @@ def is_ignored_file(file_path):
     return False
 
 
-def get_jenkins_path(file_name, root_package=None):
+def get_jenkins_path(file_name, root_package=None, src_file_link_prefix=None):
     file_name_parts = file_name.split('/')
     file_name_parts[-1] = file_name_parts[-1].replace('.py', '_py')
+    if src_file_link_prefix:
+        file_name_parts.insert(0, src_file_link_prefix)
     if root_package:
         return '%s/%s' % (root_package, '_'.join(file_name_parts))
     else:
@@ -149,7 +151,8 @@ def get_current_git_branch():
 
 def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PATH,
                   html_file_path=settings.HTML_DIFF_REPORT_PATH, root_package=None,
-                  sort_by='filename'):
+                  sort_by='filename', link_prefix='',
+                  retain_build_no=False):
     assert os.path.exists(coverage_file)
 
     target_lines = parse_patch(patch_file)
@@ -228,12 +231,18 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
                 total_coverage_percent += coverage_info['coverage_percent']
                 total_coverage_executed += coverage_executed
                 total_coverage_covered += coverage_covered
-                jenkins_coverage_path = get_jenkins_path(file_name, root_package)
+                jenkins_coverage_path = get_jenkins_path(file_name, root_package, link_prefix)
+                
+                if retain_build_no:
+                    relative_path = '..'
+                else:
+                    relative_path = '../..'
                 rows.append(row_template.substitute(
                     file_name=file_name, coverage_percent=coverage_percent,
                     coverage_executed=coverage_executed,
                     coverage_covered=coverage_covered,
-                    jenkins_coverage_path=jenkins_coverage_path))
+                    jenkins_coverage_path=jenkins_coverage_path, 
+                    relative_path=relative_path))
                 print print_format_string.format(file_name, coverage_percent,
                                                  coverage_covered, coverage_executed)
 
@@ -276,6 +285,10 @@ def main():
     opt.add_option('-s', '--sort-by', dest='sort_by', default='filename',
                    help='Sort by type: [filename, percentage, numcovered]',
                    choices=SORT_BY_CHOICES)
+    opt.add_option('-b', '--retain-build-no', dest='retain_build_no', default=False,
+                   action='store_true', help='Set the build number to be used while creating links for source files')
+    opt.add_option('-p', '--link-prefix', dest='link_prefix',
+                   default='', help='Set link prefix to be used while creating links for source file')
     (options, args) = opt.parse_args()
     if not args:
         print "No patch file provided"
@@ -288,10 +301,13 @@ def main():
     html_file_path = options.html_file_path
     root_package = options.root_package
     sort_by = options.sort_by
+    retain_build_no = options.retain_build_no
+    link_prefix = options.link_prefix
+
     patch_file = args[0]
     diff_coverage(patch_file, show_all=show_all, coverage_file=coverage_file,
                   html_file_path=html_file_path, root_package=root_package,
-                  sort_by=sort_by)
+                  sort_by=sort_by, retain_build_no=retain_build_no, link_prefix=link_prefix)
 
 
 if __name__ == "__main__":
