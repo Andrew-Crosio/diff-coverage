@@ -31,9 +31,11 @@ setup(name='diffcoverage',
       ],
       entry_points={
           'console_scripts': [
-              'diffcoverage = diffcoverage/diff_coverage.py:_main',
+              'diffcoverage = diffcoverage.diff_coverage:_main',
           ],
       },
-      install_requires=[],
+      install_requires=[
+          'coverage==3.7'
+      ],
       tests_require=[],
 )
