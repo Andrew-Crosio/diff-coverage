@@ -1,6 +1,6 @@
 """ Patch utility to apply unified diffs
 
-    Brute-force line-by-line non-recursive parsing 
+    Brute-force line-by-line non-recursive parsing
 
     Copyright (c) 2008-2011 anatoly techtonik
     Available under the terms of MIT license
@@ -902,7 +902,7 @@ if __name__ == "__main__":
             patch = fromfile(patchfile)
 
     if options.diffstat:
-        print patch.diffstat()
+        print(patch.diffstat())
         sys.exit(0)
 
     #pprint(patch)

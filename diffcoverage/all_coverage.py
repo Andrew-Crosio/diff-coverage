@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 """Performs all coverage"""
+from __future__ import print_function
 from optparse import OptionParser
 from pkg_resources import load_entry_point
 import subprocess
@@ -41,27 +42,27 @@ def main():
                    action='store_true', help='Don\'t generate HTML coverage report')
     (options, args) = opt.parse_args()
     if args:
-        print 'Does not take arguments'
-        print
+        print('Does not take arguments')
+        print()
         opt.print_help()
         sys.exit(1)
 
     coverage_obj = measure_test_coverage()
-    print
-    print 'Saving coverage report...'
+    print()
+    print('Saving coverage report...')
     coverage_obj.save()
     if not options.no_xml:
-        print 'Saving Cobertura (XML) report...'
+        print('Saving Cobertura (XML) report...')
         coverage_obj.xml_report(outfile=settings.XML_REPORT_FILE)
 
     if not options.no_html:
-        print 'Saving HTML report...'
+        print('Saving HTML report...')
         coverage_obj.html_report(directory=settings.HTML_REPORT_DIR)
 
-    print 'Creating diff patch...'
+    print('Creating diff patch...')
     subprocess.call('git diff %s > /tmp/diffpatch' % settings.COMPARE_WITH_BRANCH,
                     shell=True)
-    print 'Creating diff coverage report...'
+    print('Creating diff coverage report...')
     diff_coverage('/tmp/diffpatch')
 
 

@@ -10,6 +10,7 @@ during a coverage session.
 requires http://python-patch.googlecode.com/svn/trunk/patch.py
 which is included in this package with attribution
 """
+from __future__ import print_function
 from collections import defaultdict
 from optparse import OptionParser
 import logging
@@ -190,8 +191,8 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
     with open(html_file_path, 'w') as html_report:
         if report:
             current_branch = get_current_git_branch()
-            print 'Coverage report for branch "%s" against "%s"' % (
-                current_branch, settings.COMPARE_WITH_BRANCH)
+            print('Coverage report for branch "%s" against "%s"' % (
+                current_branch, settings.COMPARE_WITH_BRANCH))
             max_filename_size = max(len(key) for key in report.keys())
             max_filename_size = max(max_filename_size, len(FILE_NAME_HEADER))
             max_covered_size = len(str(max(info['coverage_covered']
@@ -208,10 +209,10 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
                 LINE_SEPARATOR_NO_JOIN * 9,
                 LINE_SEPARATOR_NO_JOIN * (max_covered_size + max_executed_size + 3),
             )
-            print line_separator
-            print header_format_string.format(FILE_NAME_HEADER, PERCENT_COVERED_HEADER,
-                                              COVERAGE_LINE_HEADER, TOTAL_LINE_COV_HEADER)
-            print line_separator
+            print(line_separator)
+            print(header_format_string.format(FILE_NAME_HEADER, PERCENT_COVERED_HEADER,
+                                              COVERAGE_LINE_HEADER, TOTAL_LINE_COV_HEADER))
+            print(line_separator)
             print_format_string = ('| {0:<%ds} | {1:>9s} | {2:>%dd} / {3:<%dd} |'
                                    % (max_filename_size, max_covered_size,
                                       max_executed_size))
@@ -246,32 +247,32 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
                     coverage_covered=coverage_covered,
                     jenkins_coverage_path=jenkins_coverage_path,
                     relative_path=relative_path))
-                print print_format_string.format(file_name, coverage_percent,
-                                                 coverage_covered, coverage_executed)
+                print(print_format_string.format(file_name, coverage_percent,
+                                                 coverage_covered, coverage_executed))
 
-            print line_separator
+            print(line_separator)
             num_items = len(report)
             total_avg_coverage_percent = '%.1f%%' % (
                 float(total_coverage_covered) / total_coverage_executed * 100)
-            print print_format_string.format('TOTAL', total_avg_coverage_percent,
+            print(print_format_string.format('TOTAL', total_avg_coverage_percent,
                                              total_coverage_covered,
-                                             total_coverage_executed)
+                                             total_coverage_executed))
             average_coverage_percent = '%.1f%%' % (total_coverage_percent / num_items)
             average_coverage_executed = total_coverage_executed / num_items
             average_coverage_covered = total_coverage_covered / num_items
             avg_print_format_string = ('| {0:<%ds} | {1:>9s} | {2:>%d.1f} / {3:<%d.1f} |'
                                        % (max_filename_size, max_covered_size,
                                           max_executed_size))
-            print avg_print_format_string.format('AVERAGE', average_coverage_percent,
+            print(avg_print_format_string.format('AVERAGE', average_coverage_percent,
                                                  average_coverage_covered,
-                                                 average_coverage_executed)
-            print line_separator
+                                                 average_coverage_executed))
+            print(line_separator)
             all_rows = ''.join(rows)
             html_report_string = layout_template.substitute(coverage_rows=all_rows)
             html_report.write(html_report_string)
         else:
             html_report.write('<html><body><h1>Error! Nothing found!</body></html>')
-            print >> sys.stderr, 'Error! Nothing found!'
+            print('Error! Nothing found!', file=sys.stderr)
 
 
 def main():
@@ -294,8 +295,8 @@ def main():
                    default='', help='Set link prefix to be used while creating links for source file')
     (options, args) = opt.parse_args()
     if not args:
-        print "No patch file provided"
-        print
+        print("No patch file provided")
+        print()
         opt.print_help()
         sys.exit(1)
 
