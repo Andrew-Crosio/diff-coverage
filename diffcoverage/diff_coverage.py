@@ -45,8 +45,8 @@ STRIP_GIT_BRANCH_CHARS = GIT_BRANCH_SELECTION_MARKER + string.whitespace
 LINE_COVER_SEP = ' / '
 LEFTOVER_BAD_CHARS = re.compile('^(?:a|b|ab)/')
 TEMPLATE_FOLDER = os.path.abspath(os.path.join(__file__, '..'))
-LAYOUT_TEMPLATE_FILE = os.path.join(TEMPLATE_FOLDER, 'templates/layout.html')
-ROW_TEMPLATE_FILE = os.path.join(TEMPLATE_FOLDER, 'templates/row.html')
+LAYOUT_TEMPLATE_FILE = os.path.join(TEMPLATE_FOLDER, 'templates/cobertura/layout.html')
+ROW_TEMPLATE_FILE = os.path.join(TEMPLATE_FOLDER, 'templates/cobertura/row.html')
 ADDED_LINE = '+'
 REMOVED_LINE = '-'
 ROOT_PATH = os.getcwd()
@@ -150,7 +150,7 @@ def get_current_git_branch():
 
 
 def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PATH,
-                  html_file_path=settings.HTML_DIFF_REPORT_PATH, root_package=None,
+                  html_file_path=None, root_package=None,
                   sort_by='filename', link_prefix='',
                   retain_build_no=False):
     assert os.path.exists(coverage_file)
@@ -183,6 +183,9 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
             'coverage_executed': coverage_executed,
             'coverage_covered': coverage_covered
         }
+
+    if not html_file_path:
+        return
 
     with open(html_file_path, 'w') as html_report:
         if report:
@@ -232,7 +235,7 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
                 total_coverage_executed += coverage_executed
                 total_coverage_covered += coverage_covered
                 jenkins_coverage_path = get_jenkins_path(file_name, root_package, link_prefix)
-                
+
                 if retain_build_no:
                     relative_path = '..'
                 else:
@@ -241,7 +244,7 @@ def diff_coverage(patch_file, show_all=False, coverage_file=settings.COVERAGE_PA
                     file_name=file_name, coverage_percent=coverage_percent,
                     coverage_executed=coverage_executed,
                     coverage_covered=coverage_covered,
-                    jenkins_coverage_path=jenkins_coverage_path, 
+                    jenkins_coverage_path=jenkins_coverage_path,
                     relative_path=relative_path))
                 print print_format_string.format(file_name, coverage_percent,
                                                  coverage_covered, coverage_executed)
@@ -278,7 +281,7 @@ def main():
     opt.add_option('-c', '--coverage-file', dest='coverage_file',
                    default=settings.COVERAGE_PATH, help='Set the coverage file path')
     opt.add_option('-o', '--output-file', dest='html_file_path',
-                   default=settings.HTML_DIFF_REPORT_PATH,
+                   default=None,
                    help='Set the path to save the html diff coverage report.')
     opt.add_option('-r', '--root-package', dest='root_package',
                    default=None, help='Set the root package name for the XML report')
