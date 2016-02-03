@@ -12,9 +12,7 @@ setup(
     description='Measure difference in coverage with a difference patch',
     long_description=open('README.md').read(),
     packages=find_packages(),
-    package_data={
-        'diffcoverage': ['templates/*/*.html']
-    },
+    package_data={'': ['templates/*/*.html']},
     include_package_data=True,
     platforms=['any'],
     classifiers=[
