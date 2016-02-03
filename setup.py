@@ -4,7 +4,7 @@ from setuptools import find_packages
 
 setup(
     name='diffcoverage',
-    version='1.1',
+    version='1.0.1',
     author='Andrew Crosio',
     author_email='andrew@andrewcrosio.com',
     url='https://github.com/gxx/diff-coverage',
@@ -12,7 +12,7 @@ setup(
     description='Measure difference in coverage with a difference patch',
     long_description=open('README.md').read(),
     packages=find_packages(),
-    package_data={'': ['templates/*/*.html']},
+    package_data={'': ['templates/*/*.html', '*.md']},
     include_package_data=True,
     platforms=['any'],
     classifiers=[
