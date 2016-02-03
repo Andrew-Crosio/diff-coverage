@@ -10,9 +10,9 @@ setup(
     url='https://github.com/gxx/diff-coverage',
     license='Unlicensed',
     description='Measure difference in coverage with a difference patch',
-    long_description=open('README.md').read(),
+    long_description='Measure difference in coverage with a difference patch',
     packages=find_packages(),
-    package_data={'': ['templates/*/*.html', '*.md']},
+    package_data={'': ['templates/*/*.html', 'README.md']},
     include_package_data=True,
     platforms=['any'],
     classifiers=[
